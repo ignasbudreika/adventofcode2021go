@@ -76,24 +76,22 @@ func part2() {
 		os.Exit(1)
 	}
 
-	answers := make(chan message, len(numbers[0]))
-	wg := &sync.WaitGroup{}
+	oxygenGeneratorBytes := findOxygenGeneratorRatingRecursively(numbers, 0)
+	CO2ScrubberBytes := findCO2SCrubberRatingRecursively(numbers, 0)
 
-	for i := 0; i < len(numbers[0]); i++ {
-		wg.Add(1)
-		go countOnes(wg, numbers, i, answers)
+	oxygenGeneratorRating, err := strconv.ParseInt(oxygenGeneratorBytes, 2, 64)
+	if err != nil {
+		log.Fatalf("something wrong with oxygen generator rating: %s", oxygenGeneratorBytes)
 	}
 
-	wg.Wait()
-
-	mostCommonBytes := make([]string, len(numbers[0]))
-	leastCommonBytes := make([]string, len(numbers[0]))
-
-	for i := 0; i < len(numbers[0]); i++ {
-		msg := <-answers
-		mostCommonBytes[msg.Index] = string(msg.MostCommonByte)
-		leastCommonBytes[msg.Index] = string(msg.LeastCommonByte)
+	CO2ScrubberRating, err := strconv.ParseInt(CO2ScrubberBytes, 2, 64)
+	if err != nil {
+		log.Fatalf("something wrong with co2 scrubber rating: %s", CO2ScrubberBytes)
 	}
+
+	fmt.Printf("oxygen generator rating: %d\n", oxygenGeneratorRating)
+	fmt.Printf("co2 scrubber rating: %d\n", CO2ScrubberRating)
+	fmt.Printf("power consumption: %d\n", oxygenGeneratorRating*CO2ScrubberRating)
 }
 
 func countOnes(wg *sync.WaitGroup, numbers []string, i int, answer chan<- message) {
@@ -111,6 +109,58 @@ func countOnes(wg *sync.WaitGroup, numbers []string, i int, answer chan<- messag
 	} else {
 		answer <- message{Index: i, MostCommonByte: '0', LeastCommonByte: '1'}
 	}
+}
+
+func findOxygenGeneratorRatingRecursively(numbers []string, i int) string {
+	filteredWithOnes := make([]string, 0)
+	filteredWithZeros := make([]string, 0)
+
+	for _, number := range numbers {
+		if number[i] == '1' {
+			filteredWithOnes = append(filteredWithOnes, number)
+		} else {
+			filteredWithZeros = append(filteredWithZeros, number)
+		}
+	}
+
+	if len(filteredWithOnes) >= len(filteredWithZeros) {
+		if len(filteredWithOnes) == 1 {
+			return filteredWithOnes[0]
+		}
+
+		return findOxygenGeneratorRatingRecursively(filteredWithOnes, i+1)
+	}
+
+	if len(filteredWithZeros) == 1 {
+		return filteredWithZeros[0]
+	}
+	return findOxygenGeneratorRatingRecursively(filteredWithZeros, i+1)
+}
+
+func findCO2SCrubberRatingRecursively(numbers []string, i int) string {
+	filteredWithOnes := make([]string, 0)
+	filteredWithZeros := make([]string, 0)
+
+	for _, number := range numbers {
+		if number[i] == '1' {
+			filteredWithOnes = append(filteredWithOnes, number)
+		} else {
+			filteredWithZeros = append(filteredWithZeros, number)
+		}
+	}
+
+	if len(filteredWithOnes) >= len(filteredWithZeros) {
+		if len(filteredWithZeros) == 1 {
+			return filteredWithZeros[0]
+		}
+
+		return findCO2SCrubberRatingRecursively(filteredWithZeros, i+1)
+	}
+
+	if len(filteredWithOnes) == 1 {
+		return filteredWithOnes[0]
+	}
+	return findCO2SCrubberRatingRecursively(filteredWithOnes, i+1)
 }
 
 func parse(filename string) ([]string, error) {
