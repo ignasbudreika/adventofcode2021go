@@ -12,11 +12,13 @@ import (
 type bingoBoard struct {
 	Rows [][]int
 	Sum  int
+	Won  bool
 }
 
 type result struct {
-	Won bool
-	Sum int
+	Won   bool
+	Sum   int
+	Index int
 }
 
 type bingoGame struct {
@@ -26,6 +28,7 @@ type bingoGame struct {
 
 func main() {
 	part1()
+	part2()
 }
 
 func part1() {
@@ -38,7 +41,7 @@ func part1() {
 		marked := make(chan result, len(game.Boards))
 
 		for i := 0; i < len(game.Boards); i++ {
-			go markNumber(marked, &game.Boards[i], number)
+			go markNumber(marked, &game.Boards[i], i, number)
 		}
 
 		stop := false
@@ -57,7 +60,36 @@ func part1() {
 	}
 }
 
-func markNumber(marked chan<- result, board *bingoBoard, number int) {
+func part2() {
+	game, err := parse("input.txt")
+	if err != nil {
+		log.Fatalf("bingo subsystem has failed: %v", err)
+	}
+
+	lastScore := 0
+	for _, number := range game.Numbers {
+		marked := make(chan result, len(game.Boards))
+
+		stillPlaying := 0
+		for i := 0; i < len(game.Boards); i++ {
+			if !game.Boards[i].Won {
+				stillPlaying++
+				go markNumber(marked, &game.Boards[i], i, number)
+			}
+		}
+
+		for i := 0; i < stillPlaying; i++ {
+			res := <-marked
+			if res.Won {
+				game.Boards[res.Index].Won = true
+				lastScore = res.Sum * number
+			}
+		}
+	}
+	fmt.Println(lastScore)
+}
+
+func markNumber(marked chan<- result, board *bingoBoard, index, number int) {
 	found := false
 
 	// mark number
@@ -87,7 +119,7 @@ checkIfBoardWon:
 		}
 
 		if sum == 0 {
-			marked <- result{Won: true, Sum: board.Sum}
+			marked <- result{Won: true, Sum: board.Sum, Index: index}
 			return
 		}
 	}
@@ -101,7 +133,7 @@ checkIfBoardWon:
 		}
 
 		if sum == 0 {
-			marked <- result{Won: true, Sum: board.Sum}
+			marked <- result{Won: true, Sum: board.Sum, Index: index}
 			return
 		}
 	}
