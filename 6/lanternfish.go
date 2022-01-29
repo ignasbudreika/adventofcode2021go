@@ -9,30 +9,45 @@ import (
 )
 
 type lanternfishes struct {
-	Fishes map[int]int
-	Total  int
+	Fishes map[int]uint64
+	Total  uint64
 }
 
 func main() {
-	lanternfishes, err := parse("input.txt")
+	data, err := parse("input.txt")
 	if err != nil {
 		log.Fatalf("catching fishes failed: %v", err)
 	}
 
-	for day := 1; day <= 80; day++ {
-		ready := lanternfishes.Fishes[0]
+	// something does not work when copying the map:///
+	// dataCopy := lanternfishes{
+	// 	Fishes: map[int]uint64{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0},
+	// 	Total:  0,
+	// }
+	// for day, fishes := range data.Fishes {
+	// 	fmt.Println(day, fishes)
+	// 	dataCopy.Fishes[day] = fishes
+	// }
+
+	// fmt.Printf("after 80 days: %d\n", calcFishes(data, 80))
+	fmt.Printf("after 256 days: %d\n", calcFishes(data, 256))
+}
+
+func calcFishes(data lanternfishes, days int) uint64 {
+	for day := 1; day <= days; day++ {
+		ready := data.Fishes[0]
 
 		for i := 0; i < 8; i++ {
-			lanternfishes.Fishes[i] = lanternfishes.Fishes[i+1]
+			data.Fishes[i] = data.Fishes[i+1]
 		}
 
-		lanternfishes.Fishes[6] += ready
-		lanternfishes.Fishes[8] = ready
+		data.Fishes[6] += ready
+		data.Fishes[8] = ready
 
-		lanternfishes.Total += ready
+		data.Total += ready
 	}
 
-	fmt.Println(lanternfishes.Total)
+	return data.Total
 }
 
 func parse(filename string) (lanternfishes, error) {
@@ -41,7 +56,7 @@ func parse(filename string) (lanternfishes, error) {
 		return lanternfishes{}, err
 	}
 
-	days := map[int]int{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+	days := map[int]uint64{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
 	total := 0
 	for _, number := range strings.Split(string(input), ",") {
 		n, _ := strconv.Atoi(number)
@@ -50,5 +65,5 @@ func parse(filename string) (lanternfishes, error) {
 		total++
 	}
 
-	return lanternfishes{Fishes: days, Total: total}, nil
+	return lanternfishes{Fishes: days, Total: uint64(total)}, nil
 }
